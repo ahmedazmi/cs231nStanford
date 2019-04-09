@@ -72,7 +72,7 @@ class KNearestNeighbor(object):
         # not use a loop over dimension.                                    #
         #####################################################################
 #        dists[i, j] = np.linalg.norm(X[i] - self.X_train[j])
-        dists[i, j] = np.sqrt(np.sum((self.X_train[j] - X[i])**2 , axis=1))
+        dists[i, j] = np.sqrt(np.sum((self.X_train[j] - X[i])**2))
 
 #        pass
         #####################################################################
@@ -126,9 +126,9 @@ class KNearestNeighbor(object):
     # HINT: Try to formulate the l2 distance using matrix multiplication    #
     #       and two broadcast sums.                                         #
     #########################################################################
-    dists = -2 * np.dot(X, self.X_train.T) + \
+    dists = np.sqrt(-2 * np.dot(X, self.X_train.T) + \
     np.sum(self.X_train**2,    axis=1) + \
-    np.sum(X**2, axis=1)[:, np.newaxis]
+    np.sum(X**2, axis=1)[:, np.newaxis])
     
 #    pass
     #########################################################################
@@ -163,8 +163,10 @@ class KNearestNeighbor(object):
       # neighbors. Store these labels in closest_y.                           #
       # Hint: Look up the function numpy.argsort.                             #
       #########################################################################
-      
-      pass
+      idx = np.argpartition(dists[i], k)
+      closest_y = np.take(self.y_train, idx[:k])
+          
+#      pass
       #########################################################################
       # TODO:                                                                 #
       # Now that you have found the labels of the k nearest neighbors, you    #
@@ -172,7 +174,10 @@ class KNearestNeighbor(object):
       # Store this label in y_pred[i]. Break ties by choosing the smaller     #
       # label.                                                                #
       #########################################################################
-      pass
+      unique, counts = np.unique(closest_y, return_counts=True)
+      indx = np.argmax(counts)
+      y_pred[i] = unique[indx]
+#      pass
       #########################################################################
       #                           END OF YOUR CODE                            # 
       #########################################################################
