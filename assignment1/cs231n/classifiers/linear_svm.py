@@ -29,13 +29,13 @@ def svm_loss_naive(W, X, y, reg):
     scores = X[i].dot(W)    #calculate the score for every class
     correct_class_score = scores[y[i]]#the correct class score
     for j in range(num_classes):#for every class in this i example
-      if j == y[i]:         #for the correct class we don't calculate the loss
+      if j == y[i]:         #for the correct class we don't calculate the loss to have a minimum loss of Zero
         continue
       margin = scores[j] - correct_class_score + 1 # note delta = 1 #check if the diff between score and correct score < margin = 1
       if margin > 0:        #if diff < margin there is a loss
         loss += margin      #update the total loss
-        dW[:,j] += X[i]     #update dWj by X[i]
-        dW[:,y[i]] -= X[i]  #update dwyi by -X[i]
+        dW[:,j] += X[i]     #update dWj by +X[i] in case margin > 0
+        dW[:,y[i]] -= X[i]  #update dwyi by -X[i] in case margin > 0
   # Right now the loss is a sum over all training examples, but we want it
   # to be an average instead so we divide by num_train.
   loss /= num_train
@@ -77,18 +77,20 @@ def svm_loss_vectorized(W, X, y, reg):
   scores = X.dot(W)     #calculate the score for each class (N,C)
   correct_class_scores = scores[range(num_train),y]     #get the correct class score for each input (N,1)
   
-  margin = ((scores.T - correct_class_scores.T)+1).T    #get the margin between all classes and the correct one (N,C)
-  margin = margin.clip(min=0)       # only get the margin when > 0
+  margin = scores - correct_class_scores.reshape(num_train,1) + 1    #get the margin between all classes and the correct one (N,C)
+  margin[margin < 0 ] = 0           # only get the margin when > 0
   margin[range(num_train), y] = 0   #remove the value at j==yi
   loss = np.sum(margin)             #sum all the margins to get total loss
   loss /= num_train                 #get average
   loss += .5 * reg * np.sum(W*W)    #add the regularization coefficient
 
   # (wj*xi -wyi*xi+1)
-  activation = (margin > 0).astype(int) #
-  sum_activation = np.sum(activation, axis = 1)
-  activation[range(num_train), y] = -sum_activation
-  dW = X.T.dot(activation)
+  activations = np.ones(margin.shape,dtype=int)*(margin > 0) # get all positions where dX will be updated
+  num_activations_sample = np.sum(activations, axis = 1)
+#  print(num_activations_sample)
+  activations[range(num_train), y] = -num_activations_sample # for each time a dwj is calculated dwyi has to be subtracted so foreach train sample we calculate how dw calculated so dyi be subtracted the same amount
+  dW = X.T.dot(activations)
+#  print(dW)
   dW /= num_train
   dW += reg * W
 
