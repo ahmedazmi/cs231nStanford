@@ -51,7 +51,10 @@ def affine_backward(dout, cache):
     - db: Gradient with respect to b, of shape (M,)
     """
     x, w, b = cache
-    dx, dw, db = None, None, np.ones_like(b)
+#    dx, dw, db = None, None, None
+    dx = np.dot(dout, w.T).reshape(x.shape)
+    dw = np.dot(x.reshape(x.shape[0],-1).T, dout)    #shapex N,D
+    db = np.dot(dout.T, np.ones(dout.shape[0]))
     ###########################################################################
     # TODO: Implement the affine backward pass.                               #
     ###########################################################################
