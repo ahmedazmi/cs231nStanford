@@ -20,7 +20,8 @@ def affine_forward(x, w, b):
     - out: output, of shape (N, M)
     - cache: (x, w, b)
     """
-    out = None
+    xShaped = x.reshape(x.shape[0],-1)    #shape N,D
+    out = np.dot(xShaped,w)+b
     ###########################################################################
     # TODO: Implement the affine forward pass. Store the result in out. You   #
     # will need to reshape the input into rows.                               #
@@ -50,7 +51,7 @@ def affine_backward(dout, cache):
     - db: Gradient with respect to b, of shape (M,)
     """
     x, w, b = cache
-    dx, dw, db = None, None, None
+    dx, dw, db = None, None, np.ones_like(b)
     ###########################################################################
     # TODO: Implement the affine backward pass.                               #
     ###########################################################################
