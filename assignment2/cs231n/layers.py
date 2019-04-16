@@ -101,6 +101,9 @@ def relu_backward(dout, cache):
     - dx: Gradient with respect to x
     """
     dx, x = None, cache
+    
+    dx = x > 0 # if x>0 we will calculate the derivative = 1
+    dx = dx * dout
     ###########################################################################
     # TODO: Implement the ReLU backward pass.                                 #
     ###########################################################################
