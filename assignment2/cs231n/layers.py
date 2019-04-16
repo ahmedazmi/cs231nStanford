@@ -76,7 +76,8 @@ def relu_forward(x):
     - out: Output, of the same shape as x
     - cache: x
     """
-    out = None
+    out = np.array(x, copy=True) 
+    out[out<0] = 0
     ###########################################################################
     # TODO: Implement the ReLU forward pass.                                  #
     ###########################################################################
