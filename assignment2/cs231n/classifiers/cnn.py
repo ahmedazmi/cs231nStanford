@@ -53,7 +53,17 @@ class ThreeLayerConvNet(object):
         # **the width and height of the input are preserved**. Take a look at      #
         # the start of the loss() function to see how that happens.                #                           
         ############################################################################
-        pass
+        C, H, W = input_dim
+        
+        self.params['W1'] = weight_scale * np.random.randn(num_filters, C, filter_size, filter_size)
+        self.params['b1'] = np.zeros(num_filters)
+
+        self.params['W2'] = np.random.normal(loc=0, scale=weight_scale, size=((H // 2)*(W // 2)*num_filters, hidden_dim))
+        self.params['b2'] = np.zeros(hidden_dim)
+
+        self.params['W3'] = np.random.normal(loc=0, scale=weight_scale, size=(hidden_dim, num_classes))
+        self.params['b3'] = np.zeros(num_classes)
+        # pass
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -68,13 +78,15 @@ class ThreeLayerConvNet(object):
 
         Input / output: Same API as TwoLayerNet in fc_net.py.
         """
+        # print("loss - ", self.params)
         W1, b1 = self.params['W1'], self.params['b1']
         W2, b2 = self.params['W2'], self.params['b2']
         W3, b3 = self.params['W3'], self.params['b3']
-
+        # print("aazmi: ",W1.shape[2])
         # pass conv_param to the forward pass for the convolutional layer
         # Padding and stride chosen to preserve the input spatial size
         filter_size = W1.shape[2]
+        # print("aazmi: ",filter_size)
         conv_param = {'stride': 1, 'pad': (filter_size - 1) // 2}
 
         # pass pool_param to the forward pass for the max-pooling layer
@@ -89,7 +101,12 @@ class ThreeLayerConvNet(object):
         # Remember you can use the functions defined in cs231n/fast_layers.py and  #
         # cs231n/layer_utils.py in your implementation (already imported).         #
         ############################################################################
-        pass
+        conv_forward_out_1, cache_forward_1 = conv_relu_pool_forward(X, self.params['W1'], self.params['b1'], conv_param, pool_param)
+        affine_forward_out_2, cache_forward_2 = affine_forward(conv_forward_out_1, self.params['W2'], self.params['b2'])
+        affine_relu_2, cache_relu_2 = relu_forward(affine_forward_out_2)
+        scores, cache_forward_3 = affine_forward(affine_relu_2, self.params['W3'], self.params['b3'])
+        # print("aazmi: End of Forward Pass")
+        # pass
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -108,7 +125,22 @@ class ThreeLayerConvNet(object):
         # automated tests, make sure that your L2 regularization includes a factor #
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
-        pass
+        
+        loss, dout = softmax_loss(scores, y)
+        # print("aazmi: Start backword path")
+        # Add regularization
+        loss += self.reg * 0.5 * (np.sum(self.params['W1'] ** 2) + np.sum(self.params['W2'] ** 2) + np.sum(self.params['W3'] ** 2))
+
+        dX3, grads['W3'], grads['b3'] = affine_backward(dout, cache_forward_3)
+        dX2 = relu_backward(dX3, cache_relu_2)
+        dX2, grads['W2'], grads['b2'] = affine_backward(dX2, cache_forward_2)
+        dX1, grads['W1'], grads['b1'] = conv_relu_pool_backward(dX2, cache_forward_1)
+
+        grads['W3'] = grads['W3'] + self.reg * self.params['W3']
+        grads['W2'] = grads['W2'] + self.reg * self.params['W2']
+        grads['W1'] = grads['W1'] + self.reg * self.params['W1']
+        # print("aazmi: End backword path")
+        # pass
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
