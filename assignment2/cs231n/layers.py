@@ -342,13 +342,13 @@ def layernorm_forward(x, gamma, beta, ln_param):
     # transformations you could perform, that would enable you to copy over   #
     # the batch norm code and leave it almost unchanged?                      #
     ###########################################################################
-    ln_param['mode'] = 'train' # same as batch norm in train mode
-    ln_param['layernorm'] = 1
-    # transpose x, gamma and beta
-    out, cache = batchnorm_forward(x.T, gamma.reshape(-1,1),
-                                   beta.reshape(-1,1), ln_param)
-    # transpose output to get original dims
-    out = out.T
+    sample_mean = np.mean(x, axis=1)
+    sample_var = np.var(x, axis=1)+eps
+    std = np.sqrt(sample_var)
+    z = (x.T - sample_mean)/(std)
+    out = gamma * z.T + beta      # called fn S in BP
+        
+    cache = {'x':x, 'mean':sample_mean, 'var':sample_var, 'std':std, 'gamma':gamma, 'beta':beta, 'z':z}
         
 #    cache = {'x':x, 'mean':sample_mean, 'var':sample_var, 'std':std, 'gamma':gamma, 'beta':beta, 'z':z}
     ###########################################################################
@@ -389,7 +389,7 @@ def layernorm_backward(dout, cache):
 
     N = dout.shape[0]
     z = cache['z']
-    dfdz = dout * cache['gamma']                                    #[NxD]
+    dfdz = dout * cache['gamma'].reshape(-1,1)                                    #[NxD]
     dfdz_sum = np.sum(dfdz,axis=0)                                  #[1xD]
     dx = dfdz - dfdz_sum/N - np.sum(dfdz * z,axis=0) * z/N          #[NxD]
     dx /= cache['std']
