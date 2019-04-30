@@ -342,13 +342,15 @@ def layernorm_forward(x, gamma, beta, ln_param):
     # transformations you could perform, that would enable you to copy over   #
     # the batch norm code and leave it almost unchanged?                      #
     ###########################################################################
-    sample_mean = np.mean(x, axis=1)
-    sample_var = np.var(x, axis=1)+eps
-    std = np.sqrt(sample_var)
-    z = (x.T - sample_mean)/(std)
-    out = gamma * z.T + beta      # called fn S in BP
+    ln_param['mode'] = 'train' # same as batch norm in train mode
+    ln_param['layernorm'] = 1
+    # transpose x, gamma and beta
+    out, cache = batchnorm_forward(x.T, gamma.reshape(-1,1),
+                                   beta.reshape(-1,1), ln_param)
+    # transpose output to get original dims
+    out = out.T
         
-    cache = {'x':x, 'mean':sample_mean, 'var':sample_var, 'std':std, 'gamma':gamma, 'beta':beta, 'z':z}
+#    cache = {'x':x, 'mean':sample_mean, 'var':sample_var, 'std':std, 'gamma':gamma, 'beta':beta, 'z':z}
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -379,20 +381,18 @@ def layernorm_backward(dout, cache):
     # implementation of batch normalization. The hints to the forward pass    #
     # still apply!                                                            #
     ###########################################################################
+    # transpose gradients w.r.t. input, x, to their original dims
     dout = dout.T
     N = cache['x'].shape[0]
-    dbeta = np.sum(dout, axis=0)
-    dgamma = np.sum(dout * cache['z'], axis=0)
-    
-    dSdz = dout * cache['gamma']
-    dmeandx = 1 / N
-    dvardx = 2 / N * (cache['x']-cache['mean'])
-    dzdx = 1 / cache['std']
-    dzdmean = -1 / cache['std']
-    dzdvar = -1 / 2 * (cache['var']**-1.5)*(cache['x']-cache['mean'])
-    dvardmean = -2 / N * np.sum(cache['x'] - cache['mean'], axis=0) 
-    
-    dx = dSdz*dzdx + np.sum(dSdz*dzdmean,axis=0)*dmeandx + np.sum(dSdz*dzdvar,axis=0) * (dvardx + dvardmean*dmeandx)
+    dbeta = np.sum(dout, axis=1)
+    dgamma = np.sum(dout * cache['z'], axis=1)
+
+    N = dout.shape[0]
+    z = cache['z']
+    dfdz = dout * cache['gamma']                                    #[NxD]
+    dfdz_sum = np.sum(dfdz,axis=0)                                  #[1xD]
+    dx = dfdz - dfdz_sum/N - np.sum(dfdz * z,axis=0) * z/N          #[NxD]
+    dx /= cache['std']
     dx = dx.T
     ###########################################################################
     #                             END OF YOUR CODE                            #
