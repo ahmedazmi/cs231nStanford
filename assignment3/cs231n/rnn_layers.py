@@ -191,7 +191,12 @@ def word_embedding_forward(x, W):
     #                                                                            #
     # HINT: This can be done in one line using NumPy's array indexing.           #
     ##############################################################################
-    pass
+#    pass
+#    print(x)
+#    print(W)
+    out = W[x,:]
+#    print (out)
+    cache = x, W
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
