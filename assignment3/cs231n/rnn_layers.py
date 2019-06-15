@@ -400,7 +400,19 @@ def lstm_forward(x, h0, Wx, Wh, b):
     # TODO: Implement the forward pass for an LSTM over an entire timeseries.   #
     # You should use the lstm_step_forward function that you just defined.      #
     #############################################################################
-    pass
+#    pass
+    N, T, D = np.shape(x)
+    _, H = np.shape(h0)
+    cache = []
+    h = []
+    prev_h = h0
+    prev_c = np.zeros_like(prev_h)
+    for t in range(T):
+      prev_h, prev_c, cache_t = lstm_step_forward(x[:,t,:], prev_h, prev_c, Wx, Wh, b)
+      h.append(prev_h)
+      cache.append(cache_t)
+    h = np.array(h)
+    h = h.transpose(1, 0, 2)
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
@@ -428,7 +440,24 @@ def lstm_backward(dh, cache):
     # TODO: Implement the backward pass for an LSTM over an entire timeseries.  #
     # You should use the lstm_step_backward function that you just defined.     #
     #############################################################################
-    pass
+#    pass
+    N, T, H = dh.shape
+    _x = cache[0][0]
+    _, D = np.shape(_x)
+
+    dx = np.zeros((N, T, D))
+    prev_dh = np.zeros((N, H))
+    prev_dc = np.zeros((N, H))
+    dWx = np.zeros((D, 4*H))
+    dWh = np.zeros((H, 4*H))
+    db = np.zeros(4*H)
+
+    for t in reversed(range(0, T)):
+      dx[:,t,:], prev_dh, prev_dc, dWx_t, dWh_t, db_t = lstm_step_backward(dh[:,t,:] + prev_dh, prev_dc, cache[t])
+      dWx += dWx_t
+      dWh += dWh_t
+      db += db_t
+    dh0 = prev_dh
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
