@@ -329,7 +329,43 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
     # the output value from the nonlinearity.                                   #
     #############################################################################
 #    pass
-    
+    x, prev_h, prev_c, Wx, Wh, b, i, f, o, g, ai, af, ao, ag, next_c = cache
+
+    N, H = np.shape(dnext_h)
+
+#  activation = np.dot(prev_h, Wh) + np.dot(x, Wx) + b # N,H * H,H + N,D * D,H -> N,H
+#  i = sigmoid(activation[:, 0*H:1*H])
+#  f = sigmoid(activation[:, 1*H:2*H])
+#  o = sigmoid(activation[:, 2*H:3*H])
+#  g = np.tanh(activation[:, 3*H:4*H])
+#  next_c = f * prev_c + i * g
+#  next_h = o * np.tanh(next_c)
+
+    do = np.tanh(next_c) * dnext_h
+    dtanh_next_c = o * dnext_h
+    dnext_c_total = dnext_c + (1 - np.tanh(next_c)**2) * dtanh_next_c
+
+    df = prev_c * dnext_c_total
+    dprev_c = f * dnext_c_total
+    di = g * dnext_c_total
+    dg = i * dnext_c_total
+
+    dai = sigmoid(ai) * (1 - sigmoid(ai)) * di
+    daf = sigmoid(af) * (1 - sigmoid(af)) * df
+    dao = sigmoid(ao) * (1 - sigmoid(ao)) * do
+    dag = (1 - np.tanh(ag)**2) * dg
+
+    dactivation = np.zeros((N, 4*H))
+    dactivation[:, 0*H:1*H] = dai
+    dactivation[:, 1*H:2*H] = daf
+    dactivation[:, 2*H:3*H] = dao
+    dactivation[:, 3*H:4*H] = dag
+
+    dx = np.dot(dactivation, Wx.T)
+    dprev_h = np.dot(dactivation, Wh.T)
+    dWx = np.dot(x.T, dactivation)
+    dWh = np.dot(prev_h.T, dactivation)
+    db = np.sum(dactivation, axis=0)   
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
